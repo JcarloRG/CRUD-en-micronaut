@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nueva Categoría</title>
+</head>
+<body>
+    <h1>{{#categoria}}Editar Categoría{{/categoria}}{{^categoria}}Nueva Categoría{{/categoria}}</h1>
+
+    <form action="{{#categoria}}/categorias/editar{{/categoria}}{{^categoria}}/categorias{{/categoria}}" method="post">
+        {{#categoria}}
+        <input type="hidden" name="id" value="{{id}}">
+        {{/categoria}}
+        <label>Descripción:</label>
+        <input type="text" name="descripcion" value="{{categoria.descripcion}}" required>
+        <br><br>
+        <button type="submit">Guardar</button>
+        <a href="/categorias">Cancelar</a>
+    </form>
+</body>
+</html>

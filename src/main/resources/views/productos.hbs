@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Productos</title>
+</head>
+<body>
+<h1>Lista de Productos</h1>
+
+<a href="/categorias">Ir a Categorías</a> |
+<a href="/productos/nuevo">+ Nuevo Producto</a>
+
+<table border="1" cellpadding="5">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Descripción</th>
+            <th>Precio</th>
+            <th>Categoría</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+    {{#productos}}
+        <tr>
+            <td>{{id}}</td>
+            <td>{{descripcion}}</td>
+            <td>${{precio}}</td>
+            <td>{{categoria.descripcion}}</td>
+            <td>
+                <a href="/productos/editar/{{id}}">Editar</a> |
+                <a href="/productos/eliminar/{{id}}">Eliminar</a>
+            </td>
+        </tr>
+    {{/productos}}
+    </tbody>
+</table>
+</body>
+</html>

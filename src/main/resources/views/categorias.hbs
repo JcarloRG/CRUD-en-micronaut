@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Categorías</title>
+</head>
+<body>
+    <h1>Lista de Categorías</h1>
+
+    <a href="/productos">Ir a Productos</a> |
+    <a href="/categorias/nueva">+ Nueva Categoría</a>
+
+    <table border="1" cellpadding="5" cellspacing="0">
+        <tr>
+            <th>ID</th>
+            <th>Descripción</th>
+            <th>Acciones</th>
+        </tr>
+        {{#categorias}}
+        <tr>
+            <td>{{id}}</td>
+            <td>{{descripcion}}</td>
+            <td>
+                <a href="/categorias/editar/{{id}}">Editar</a> |
+                <a href="/categorias/eliminar/{{id}}" onclick="return confirm('¿Estás seguro?')">Eliminar</a>
+            </td>
+        </tr>
+        {{/categorias}}
+    </table>
+</body>
+</html>

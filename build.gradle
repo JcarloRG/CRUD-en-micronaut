@@ -1,0 +1,76 @@
+plugins {
+    id("com.github.johnrengelman.shadow") version "8.1.1"
+    id("io.micronaut.application") version "4.4.4"
+    id("io.micronaut.aot") version "4.4.4"
+}
+
+version = "0.1"
+group = "crudapp"
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Procesadores de anotaciones
+    annotationProcessor("io.micronaut:micronaut-http-validation")
+    annotationProcessor("io.micronaut.serde:micronaut-serde-processor")
+    annotationProcessor("io.micronaut.data:micronaut-data-processor")
+
+    // Micronaut Data con Hibernate JPA
+    implementation("io.micronaut.data:micronaut-data-hibernate-jpa")
+    implementation("io.micronaut.sql:micronaut-hibernate-jpa")
+    implementation("jakarta.persistence:jakarta.persistence-api:3.1.0")
+
+    // Conexión a base de datos (MySQL)
+    implementation("io.micronaut.sql:micronaut-jdbc-hikari")
+    runtimeOnly("com.mysql:mysql-connector-j")
+
+    // Serialización
+    implementation("io.micronaut.serde:micronaut-serde-jackson")
+
+    // Cliente HTTP
+    compileOnly("io.micronaut:micronaut-http-client")
+    testImplementation("io.micronaut:micronaut-http-client")
+
+    // Vistas con Handlebars
+    implementation("io.micronaut.views:micronaut-views-handlebars")
+
+    // Logging
+    runtimeOnly("ch.qos.logback:logback-classic")
+}
+
+application {
+    mainClass = "crudapp.Application"
+}
+
+java {
+    sourceCompatibility = JavaVersion.toVersion("21")
+    targetCompatibility = JavaVersion.toVersion("21")
+}
+
+graalvmNative.toolchainDetection = false
+
+micronaut {
+    runtime("netty")
+    testRuntime("junit5")
+    processing {
+        incremental(true)
+        annotations("crudapp.*")
+    }
+    aot {
+        // Please review carefully the optimizations enabled below
+        optimizeServiceLoading = false
+        convertYamlToJava = false
+        precomputeOperations = true
+        cacheEnvironment = true
+        optimizeClassLoading = true
+        deduceEnvironment = true
+        optimizeNetty = true
+        replaceLogbackXml = true
+    }
+}
+
+tasks.named("dockerfileNative") {
+    jdkVersion = "21"
+}
