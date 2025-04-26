@@ -1,4 +1,5 @@
-version: '3'
+version: '3.8'
+
 services:
   app:
     build: .
@@ -8,24 +9,34 @@ services:
       mysql:
         condition: service_healthy
     environment:
-      DATASOURCES_DEFAULT_URL: jdbc:mysql://mysql:3306/tienda
+      DATASOURCES_DEFAULT_URL: jdbc:mysql://mysql:3306/tienda?createDatabaseIfNotExist=true
       DATASOURCES_DEFAULT_USERNAME: root
       DATASOURCES_DEFAULT_PASSWORD: "123456"
-      DATASOURCES_DEFAULT_SCHEMA: tienda
+    volumes:
+      - .:/app
+    restart: unless-stopped
 
   mysql:
-    image: mysql:8.0
+    image: mysql:8.0.33  # Versión específica para mayor estabilidad
+    container_name: mysql-db
     environment:
       MYSQL_ROOT_PASSWORD: "123456"
       MYSQL_DATABASE: tienda
+      MYSQL_USER: micronaut
+      MYSQL_PASSWORD: micronautpass
     ports:
       - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p123456"]
+      test: ["CMD-SHELL", "mysqladmin ping -uroot -p123456 || exit 1"]
       interval: 5s
       timeout: 10s
-      retries: 10
+      retries: 30
+      start_period: 30s  # Tiempo adicional para que MySQL inicie
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password  # Importante para compatibilidad
+
 volumes:
   mysql_data:

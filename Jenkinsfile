@@ -1,32 +1,56 @@
 pipeline {
     agent any
     
+    environment {
+        DOCKER_BUILDKIT = "1"  # Habilita BuildKit para mejores builds
+    }
+    
     stages {
-        stage('Start Services') {
+        stage('Start MySQL') {
             steps {
-                bat 'docker-compose up -d mysql'
                 script {
-                    // Espera hasta que MySQL esté saludable
-                    def mysqlHealthy = false
-                    def attempts = 0
-                    while(!mysqlHealthy && attempts < 30) {
-                        attempts++
-                        sleep(time: 5, unit: 'SECONDS')
-                        def result = bat(script: 'docker inspect --format "{{.State.Health.Status}}" crud-en-micronaut-mysql-1', returnStdout: true).trim()
-                        mysqlHealthy = result == 'healthy'
+                    // Limpiar cualquier contenedor previo
+                    bat 'docker-compose down -v || echo "No hay contenedores para limpiar"'
+                    
+                    // Iniciar solo MySQL
+                    bat 'docker-compose up -d mysql'
+                    
+                    // Esperar con timeout mejorado
+                    def waitTime = 120  // 2 minutos máximo
+                    def interval = 5
+                    def attempts = waitTime / interval
+                    def healthy = false
+                    
+                    for (int i = 0; i < attempts; i++) {
+                        sleep(time: interval, unit: 'SECONDS')
+                        def status = bat(
+                            script: 'docker inspect --format "{{.State.Health.Status}}" mysql-db',
+                            returnStdout: true
+                        ).trim()
+                        
+                        if (status == 'healthy') {
+                            healthy = true
+                            break
+                        }
+                        echo "Esperando que MySQL esté listo... Intento ${i+1}/${attempts} - Estado: ${status}"
                     }
-                    if(!mysqlHealthy) {
-                        error("MySQL no se inició correctamente después de 30 intentos")
+                    
+                    if (!healthy) {
+                        // Obtener logs para diagnóstico
+                        bat 'docker logs mysql-db'
+                        error("MySQL no se inició correctamente después de ${waitTime} segundos")
                     }
                 }
             }
         }
-        stage('Build') {
+        
+        stage('Build Application') {
             steps {
                 bat 'docker-compose build app'
-                bat 'docker-compose run app gradle build --no-daemon'
+                bat 'docker-compose run --rm app gradle build --no-daemon'
             }
         }
+        
         stage('Deploy') {
             steps {
                 bat 'docker-compose up -d app'
@@ -36,7 +60,18 @@ pipeline {
     
     post {
         always {
-            bat 'docker-compose down'
+            // Limpieza con captura de logs para diagnóstico
+            script {
+                bat 'docker-compose logs --no-color > docker-logs.txt || echo "No se pudieron obtener logs"'
+                archiveArtifacts artifacts: 'docker-logs.txt', allowEmptyArchive: true
+                bat 'docker-compose down -v'
+            }
+        }
+        success {
+            echo 'Pipeline ejecutado con éxito!'
+        }
+        failure {
+            echo 'Pipeline falló, revisar logs para diagnóstico'
         }
     }
 }
