@@ -12,8 +12,4 @@ services:
     volumes:
       - ./jenkins_home:/var/jenkins_home  
       - /var/run/docker.sock:/var/run/docker.sock  
-<<<<<<< HEAD
       - .:/var/jenkins_proyecto  
-=======
-      - .:/var/jenkins_proyecto  
->>>>>>> cbad2069f27b97efd7a15a8c6a4acea5d7d7b518
