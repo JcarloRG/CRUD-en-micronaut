@@ -12,4 +12,8 @@ pipeline {
             }
         }
     }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> cbad2069f27b97efd7a15a8c6a4acea5d7d7b518
