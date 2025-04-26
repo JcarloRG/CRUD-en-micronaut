@@ -5,14 +5,13 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
     environment:
       DATASOURCES_DEFAULT_URL: jdbc:mysql://mysql:3306/tienda
       DATASOURCES_DEFAULT_USERNAME: root
       DATASOURCES_DEFAULT_PASSWORD: "123456"
       DATASOURCES_DEFAULT_SCHEMA: tienda
-    volumes:
-      - .:/app
 
   mysql:
     image: mysql:8.0
@@ -20,24 +19,14 @@ services:
       MYSQL_ROOT_PASSWORD: "123456"
       MYSQL_DATABASE: tienda
     ports:
-      - "3306:3306"
+      - "3307:3306"  # Puerto modificado aquí
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p123456"]
       interval: 5s
       timeout: 10s
       retries: 10
-
-  jenkins:
-    image: jenkins/jenkins:lts
-    ports:
-      - "8080:8080"
-      - "50000:50000"
-    volumes:
-      - ./jenkins_home:/var/jenkins_home
-      - /var/run/docker.sock:/var/run/docker.sock
-      - .:/var/jenkins_proyecto
 
 volumes:
   mysql_data:
