@@ -1,5 +1,6 @@
 pipeline {
     agent any
+    
     stages {
         stage('Build') {
             steps {
@@ -12,8 +13,16 @@ pipeline {
             }
         }
     }
-<<<<<<< HEAD
+    
+    post {
+        always {
+            echo 'Pipeline completado - limpiando'
+        }
+        success {
+            echo '¡Despliegue exitoso!'
+        }
+        failure {
+            echo 'Pipeline fallido'
+        }
+    }
 }
-=======
-}
->>>>>>> cbad2069f27b97efd7a15a8c6a4acea5d7d7b518
