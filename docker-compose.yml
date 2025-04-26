@@ -19,7 +19,7 @@ services:
       MYSQL_ROOT_PASSWORD: "123456"
       MYSQL_DATABASE: tienda
     ports:
-      - "3307:3306"  # Puerto modificado aquí
+      - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
@@ -27,6 +27,5 @@ services:
       interval: 5s
       timeout: 10s
       retries: 10
-
 volumes:
   mysql_data:

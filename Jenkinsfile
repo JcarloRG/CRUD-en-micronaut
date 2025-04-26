@@ -5,7 +5,20 @@ pipeline {
         stage('Start Services') {
             steps {
                 bat 'docker-compose up -d mysql'
-                bat 'timeout /t 30 /nobreak' // Espera 30 segundos para que MySQL inicie
+                script {
+                    // Espera hasta que MySQL esté saludable
+                    def mysqlHealthy = false
+                    def attempts = 0
+                    while(!mysqlHealthy && attempts < 30) {
+                        attempts++
+                        sleep(time: 5, unit: 'SECONDS')
+                        def result = bat(script: 'docker inspect --format "{{.State.Health.Status}}" crud-en-micronaut-mysql-1', returnStdout: true).trim()
+                        mysqlHealthy = result == 'healthy'
+                    }
+                    if(!mysqlHealthy) {
+                        error("MySQL no se inició correctamente después de 30 intentos")
+                    }
+                }
             }
         }
         stage('Build') {
