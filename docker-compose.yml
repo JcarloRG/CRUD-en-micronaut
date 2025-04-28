@@ -2,7 +2,7 @@ version: '3.8'
 services:
   mysql:
     image: mysql:8.0
-    container_name: mysql-db
+    container_name: beautiful_saha
     ports:
       - "3307:3306"
     environment:
