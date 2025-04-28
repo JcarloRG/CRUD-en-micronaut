@@ -2,7 +2,7 @@ pipeline {
     agent any
     
     environment {
-        DOCKER_BUILDKIT = "1" // Habilita BuildKit para mejores builds
+        DOCKER_BUILDKIT = "1"  // Habilita BuildKit para mejores builds
     }
     
     stages {
@@ -12,10 +12,10 @@ pipeline {
                     // Limpiar cualquier contenedor previo
                     bat 'docker-compose down -v || echo No hay contenedores para limpiar'
                     
-                    // Iniciar solo MySQL
-                    bat 'docker-compose up -d mysql-db'
+                    // Iniciar solo el servicio mysql (no container_name)
+                    bat 'docker-compose up -d mysql'
                     
-                    // Esperar a que MySQL esté listo
+                    // Esperar que MySQL esté "healthy"
                     def waitTime = 120  // 2 minutos máximo
                     def interval = 5
                     def attempts = waitTime / interval
@@ -24,7 +24,7 @@ pipeline {
                     for (int i = 0; i < attempts; i++) {
                         sleep(time: interval, unit: 'SECONDS')
                         def status = bat(
-                            script: 'docker inspect --format="{{.State.Health.Status}}" mysql-db',
+                            script: 'docker inspect --format "{{.State.Health.Status}}" mysql-db',
                             returnStdout: true
                         ).trim()
                         
