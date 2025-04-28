@@ -14,17 +14,12 @@ pipeline {
                     docker-compose down -v
                     if %errorlevel% neq 0 echo Cleanup completed
                     '''
-
+                    
                     // Levantar MySQL
                     bat 'docker-compose up -d mysql'
-
-                    // Esperar a que MySQL esté "healthy"
-                    sleep(time: 10, unit: 'SECONDS') // Espera corta inicial
-
+                    
                     def healthy = false
                     def retries = 12
-                    def interval = 5 // 5 segundos entre cada intento
-                    
                     for (int i = 0; i < retries; i++) {
                         def status = bat(
                             script: 'docker inspect --format="{{.State.Health.Status}}" mysql-db',
@@ -32,13 +27,11 @@ pipeline {
                         ).trim()
 
                         echo "Estado de MySQL: ${status}"
-                        
+
                         if (status == 'healthy') {
                             healthy = true
                             break
                         }
-                        
-                        sleep(time: interval, unit: 'SECONDS')
                     }
 
                     if (!healthy) {
