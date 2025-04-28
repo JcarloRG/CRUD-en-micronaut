@@ -2,42 +2,64 @@ pipeline {
     agent any
     
     environment {
-        DOCKER_BUILDKIT = "1"  // Habilita BuildKit para mejores builds
+        DOCKER_BUILDKIT = "1"
+        COMPOSE_DOCKER_CLI_BUILD = "1"
     }
     
     stages {
         stage('Start MySQL') {
             steps {
                 script {
-                    // Limpiar cualquier contenedor previo
-                    bat 'docker-compose down -v || echo No hay contenedores para limpiar'
+                    // Limpieza previa
+                    bat 'docker-compose down -v || echo "Cleanup completed"'
                     
-                    // Iniciar solo el servicio mysql (no container_name)
+                    // Iniciar MySQL
                     bat 'docker-compose up -d mysql'
                     
-                    // Esperar que MySQL esté "healthy"
-                    def waitTime = 120  // 2 minutos máximo
-                    def interval = 5
-                    def attempts = waitTime / interval
+                    // Espera mejorada con verificación de logs
+                    def maxAttempts = 24
                     def healthy = false
                     
-                    for (int i = 0; i < attempts; i++) {
-                        sleep(time: interval, unit: 'SECONDS')
+                    for (int i = 1; i <= maxAttempts; i++) {
+                        sleep(time: 5, unit: 'SECONDS')
+                        
+                        // Verificar estado del contenedor
                         def status = bat(
-                            script: 'docker inspect --format "{{.State.Health.Status}}" mysql-db',
+                            script: 'docker inspect -f {{.State.Status}} mysql-db',
                             returnStdout: true
                         ).trim()
                         
-                        if (status == 'healthy') {
-                            healthy = true
-                            break
+                        if (status != "running") {
+                            error("MySQL container is not running. Status: ${status}")
                         }
-                        echo "Esperando que MySQL esté listo... Intento ${i+1}/${attempts} - Estado: ${status}"
+                        
+                        // Verificar healthcheck
+                        def health = bat(
+                            script: 'docker inspect -f {{.State.Health.Status}} mysql-db',
+                            returnStdout: true
+                        ).trim()
+                        
+                        echo "Intento ${i}/${maxAttempts} - Estado: ${health}"
+                        
+                        if (health == "healthy") {
+                            // Verificación adicional ejecutando un comando en MySQL
+                            def testQuery = bat(
+                                script: 'docker exec mysql-db mysql -uroot -p123456 -e "SHOW DATABASES;" || exit 1',
+                                returnStdout: true
+                            )
+                            
+                            if (testQuery.contains("tienda")) {
+                                healthy = true
+                                break
+                            }
+                        }
                     }
                     
                     if (!healthy) {
-                        bat 'docker logs mysql-db'
-                        error("MySQL no se inició correctamente después de ${waitTime} segundos")
+                        // Capturar logs detallados
+                        bat 'docker logs mysql-db > mysql-logs.txt'
+                        archiveArtifacts artifacts: 'mysql-logs.txt'
+                        error("MySQL no se inició correctamente después de ${maxAttempts * 5} segundos")
                     }
                 }
             }
@@ -60,16 +82,13 @@ pipeline {
     post {
         always {
             script {
-                bat 'docker-compose logs --no-color > docker-logs.txt || echo No se pudieron obtener logs'
-                archiveArtifacts artifacts: 'docker-logs.txt', allowEmptyArchive: true
+                // Capturar logs antes de limpiar
+                bat 'docker-compose logs --no-color > docker-logs.txt || echo "No logs"'
+                archiveArtifacts artifacts: 'docker-logs.txt'
+                
+                // Limpieza
                 bat 'docker-compose down -v'
             }
-        }
-        success {
-            echo 'Pipeline ejecutado con éxito!'
-        }
-        failure {
-            echo 'Pipeline falló, revisar logs para diagnóstico'
         }
     }
 }
