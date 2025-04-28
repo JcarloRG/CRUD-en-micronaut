@@ -7,7 +7,7 @@ services:
       mysql:
         condition: service_healthy
     environment:
-      DATASOURCES_DEFAULT_URL: jdbc:mysql://mysql:3306/tienda?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
+      DATASOURCES_DEFAULT_URL: jdbc:mysql://mysql:3306/tienda?createDatabaseIfNotExist=true
       DATASOURCES_DEFAULT_USERNAME: root
       DATASOURCES_DEFAULT_PASSWORD: "123456"
     volumes:
@@ -28,17 +28,13 @@ services:
       - mysql_data:/var/lib/mysql
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD-SHELL", "mysql -uroot -p123456 -e 'SELECT 1' || exit 1"]
+      test: ["CMD-SHELL", "mysqladmin ping -uroot -p123456 || exit 1"]
       interval: 5s
       timeout: 10s
       retries: 30
       start_period: 30s
     restart: unless-stopped
-    command: 
-      - --default-authentication-plugin=mysql_native_password
-      - --character-set-server=utf8mb4
-      - --collation-server=utf8mb4_unicode_ci
-      - --max_connections=200
+    command: --default-authentication-plugin=mysql_native_password
 
 volumes:
   mysql_data:

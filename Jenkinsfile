@@ -3,63 +3,43 @@ pipeline {
     
     environment {
         DOCKER_BUILDKIT = "1"
-        COMPOSE_DOCKER_CLI_BUILD = "1"
     }
     
     stages {
         stage('Start MySQL') {
             steps {
                 script {
-                    // Limpieza previa
+                    // Limpiar contenedores anteriores
                     bat 'docker-compose down -v || echo "Cleanup completed"'
-                    
-                    // Iniciar MySQL
+
+                    // Levantar MySQL
                     bat 'docker-compose up -d mysql'
-                    
-                    // Espera mejorada con verificación de logs
-                    def maxAttempts = 24
+
+                    // Esperar a que MySQL esté "healthy"
+                    sleep(time: 10, unit: 'SECONDS') // Espera corta inicial
                     def healthy = false
+                    def retries = 12
+                    def interval = 5 // 5 segundos entre cada intento
                     
-                    for (int i = 1; i <= maxAttempts; i++) {
-                        sleep(time: 5, unit: 'SECONDS')
-                        
-                        // Verificar estado del contenedor
+                    for (int i = 0; i < retries; i++) {
                         def status = bat(
-                            script: 'docker inspect -f {{.State.Status}} mysql-db',
+                            script: 'docker inspect --format="{{.State.Health.Status}}" mysql-db',
                             returnStdout: true
                         ).trim()
+
+                        echo "Estado de MySQL: ${status}"
                         
-                        if (status != "running") {
-                            error("MySQL container is not running. Status: ${status}")
+                        if (status == 'healthy') {
+                            healthy = true
+                            break
                         }
                         
-                        // Verificar healthcheck
-                        def health = bat(
-                            script: 'docker inspect -f {{.State.Health.Status}} mysql-db',
-                            returnStdout: true
-                        ).trim()
-                        
-                        echo "Intento ${i}/${maxAttempts} - Estado: ${health}"
-                        
-                        if (health == "healthy") {
-                            // Verificación adicional ejecutando un comando en MySQL
-                            def testQuery = bat(
-                                script: 'docker exec mysql-db mysql -uroot -p123456 -e "SHOW DATABASES;" || exit 1',
-                                returnStdout: true
-                            )
-                            
-                            if (testQuery.contains("tienda")) {
-                                healthy = true
-                                break
-                            }
-                        }
+                        sleep(time: interval, unit: 'SECONDS')
                     }
-                    
+
                     if (!healthy) {
-                        // Capturar logs detallados
-                        bat 'docker logs mysql-db > mysql-logs.txt'
-                        archiveArtifacts artifacts: 'mysql-logs.txt'
-                        error("MySQL no se inició correctamente después de ${maxAttempts * 5} segundos")
+                        bat 'docker logs mysql-db'
+                        error("MySQL no se inició correctamente después de varios intentos")
                     }
                 }
             }
@@ -82,13 +62,16 @@ pipeline {
     post {
         always {
             script {
-                // Capturar logs antes de limpiar
                 bat 'docker-compose logs --no-color > docker-logs.txt || echo "No logs"'
-                archiveArtifacts artifacts: 'docker-logs.txt'
-                
-                // Limpieza
+                archiveArtifacts artifacts: 'docker-logs.txt', allowEmptyArchive: true
                 bat 'docker-compose down -v'
             }
+        }
+        success {
+            echo 'Pipeline ejecutado correctamente 🚀'
+        }
+        failure {
+            echo 'Pipeline falló 😢. Revisar logs.'
         }
     }
 }
