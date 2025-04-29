@@ -1,7 +1,7 @@
 version: '3.8'
 services:
   mysql:
-    image: mysql:8.0.3
+    image: mysql:8.0
     container_name: tienda
     ports:
       - "3307:3306"
