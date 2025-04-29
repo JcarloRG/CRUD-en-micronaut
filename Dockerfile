@@ -1,4 +1,4 @@
-FROM gradle:8.13-jdk21 AS builder
+FROM gradle:8.11.1-jdk21 AS builder
 WORKDIR /home/app
 COPY . .
 RUN gradle build --no-daemon
