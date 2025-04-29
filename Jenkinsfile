@@ -22,7 +22,7 @@ pipeline {
                     def retries = 12
                     for (int i = 0; i < retries; i++) {
                         def status = bat(
-                            script: 'docker inspect --format="{{.State.Health.Status}}" friendly_black',
+                            script: 'docker inspect --format="{{.State.Health.Status}}" tienda',
                             returnStdout: true
                         ).trim()
 
@@ -35,7 +35,7 @@ pipeline {
                     }
 
                     if (!healthy) {
-                        bat 'docker logs friendly_black'
+                        bat 'docker logs tienda'
                         error("MySQL no se inició correctamente después de varios intentos")
                     }
                 }
